@@ -13,7 +13,7 @@ Snake made in python using pygame
 <ul>
   <li>Score</li>
   <li>Snake moves unlike a snake (can move diagonally)(?)</li>
-  <li>The game itself may feel choppy at the beginning</li>
+  <li>The game itself may feel choppy at the beginning (Update 07-01: Not sure if this is fixable)</li>
 </ul>
 
 This took me around a day to make. <i>Pygame</i> is fun
