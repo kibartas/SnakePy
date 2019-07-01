@@ -11,7 +11,9 @@ screen_size = (480, 480)
 apple_size = 8
 collision = True
 apple_color = (0, 255, 0)
-game_speed = 0.1
+default_game_speed = 0.05
+game_slow_by = 0.0005
+game_speed = default_game_speed
 score = 0
 
 def snakeHeadCollideApple(screen, apple_block, snake_blocks, snake_head_coordinates, snake_head_block):
@@ -22,7 +24,7 @@ def snakeHeadCollideApple(screen, apple_block, snake_blocks, snake_head_coordina
     snake_head_coordinates = spawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
     print('You ate an apple')
     apple_block = spawnApple(screen, snake_blocks, snake_head_block)
-    game_speed -= 0.001
+    game_speed -= game_slow_by
     score += 1
     return (apple_block, snake_head_coordinates)
 
@@ -33,14 +35,17 @@ def setNewDirection(direction, directionsDict):
 
 def spawnApple(screen, snake_blocks, snake_head_block):
     apple_block_coordinates = (random.randint(apple_size, (screen_size[0]-apple_size)//snake_block_size)*snake_block_size,
-            random.randint(apple_size, (screen_size[1]-apple_size)//snake_block_size)*snake_block_size)
+                               random.randint(apple_size, (screen_size[1]-apple_size)//snake_block_size)*snake_block_size)
+    apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
     while True:
         for i in range(0, len(snake_blocks)):
-            if ((snake_blocks[i].left, snake_blocks[i].top) == apple_block_coordinates or 
-                    snake_blocks[i].left, snake_blocks[i].top == snake_head_block):
-                apple_block_coordinates = (random.randint(apple_size, screen_size[0]-apple_size),
-                        random.randint(apple_size, screen_size[1]-apple_size))
+            if snake_blocks[i].colliderect(apple_block) or snake_blocks[i].colliderect(snake_head_block):
+                apple_block_coordinates = (random.randint(apple_size, (screen_size[0]-apple_size)//snake_block_size)
+                                            *snake_block_size, random.randint(apple_size, (screen_size[1]-apple_size)
+                                            //snake_block_size)*snake_block_size)
+                apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
                 i = 0
+                
         break
     print('Apple block coordinates' + str(apple_block_coordinates))
     apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
@@ -78,6 +83,7 @@ def snakeCollision(snake_blocks, snake_head_block):
     return False 
 
 def theGame(screen):
+    global game_speed
     score_font = pygame.font.Font('Super Plumber Brothers.ttf', 30)
     header_text = score_font.render('Score', True, (255, 255, 255))
     running = True
@@ -174,8 +180,9 @@ def theGame(screen):
         screen.fill((0, 0, 0), snake_head_block)
     despawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
     screen.fill((0, 0, 0), apple_block)
-    print('Apple block destroyed at ' + str((apple_block.left, apple_block.top)))
+    #print('Apple block destroyed at ' + str((apple_block.left, apple_block.top)))
     screen.fill((0, 0, 0), snake_head_block)
+    game_speed = default_game_speed
 
 def main():
     pygame.init()
