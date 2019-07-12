@@ -17,9 +17,9 @@ default_game_speed = 0.08
 game_slow_by = 0.001
 game_speed = default_game_speed
 score_block_height = 120
-score = 105
+score = 0
 white = (255, 255, 255)
-
+black = (0, 0, 0)
 
 def textToScreen(screen, text, x = 30, y = 30, size = 50, color = white, font_type = 'BillionaireMediumGrunge.ttf'):
     try:
@@ -56,12 +56,13 @@ def spawnApple(screen, snake_blocks, snake_head_block):
     apple_block_coordinates = (random.randint(apple_size, (screen_size[0]-apple_size)//snake_block_size)*snake_block_size,
                                random.randint(apple_size, (screen_size[1]-apple_size)//snake_block_size)*snake_block_size+score_block_height)
     apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
+    
     while True:
         for i in range(0, len(snake_blocks)):
-            if snake_blocks[i].colliderect(apple_block) or snake_blocks[i].colliderect(snake_head_block):
+            if snake_blocks[i].colliderect(apple_block) or snake_head_block.colliderect(apple_block):
                 apple_block_coordinates = (random.randint(apple_size, (screen_size[0]-apple_size)//snake_block_size)
                                             *snake_block_size, random.randint(apple_size, (screen_size[1]-apple_size)
-                                            //snake_block_size)*snake_block_size)
+                                            //snake_block_size)*snake_block_size+score_block_height)
                 apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
                 i = 0
                 
@@ -103,13 +104,28 @@ def snakeCollision(snake_blocks, snake_head_block):
 
 def theGame(screen):
     global game_speed, score
-    score_font = pygame.font.Font('Super Plumber Brothers.ttf', 30)
-    header_text = score_font.render('Score', True, (255, 255, 255))
     running = True
     snake_head_block = pygame.Rect(screen_size[0]/2, screen_size[1]/2, snake_block_size, snake_block_size)
     initSnake(screen, snake_head_block)
     apple_block = spawnApple(screen, (), snake_head_block)
     directions = {'Up': True, 'Down': False, 'Right': False, 'Left': False}
+
+    hiscore_file = open('hiscores.txt', 'r')
+    #hiscores_string = hiscore_file.read()
+    hiscores = hiscore_file.read().split('\n')
+    if hiscores != ['']:
+        hiscores = hiscores[:-1]
+        hiscores = [x.split(' ')[1:] for x in hiscores]
+        for i in range(0, len(hiscores)):
+            hiscores[i][1] = int(hiscores[i][1])
+        hiscores = sorted(hiscores, key=lambda hiscore: hiscore[1], reverse=True)
+        hiscore = hiscores[0][1]
+    else:
+        hiscores = []
+        hiscore = 0
+    screen.fill(black, pygame.Rect(0, 0, screen_size[0], score_block_height-1))
+    textToScreen(screen, score)
+    textToScreen(screen, 'Current hiscore is: ' + str(hiscore), 150, 0, 40) 
 
     screen.fill(white, pygame.Rect(0, 119, screen_size[0], 1))
 
@@ -202,8 +218,22 @@ def theGame(screen):
         pygame.display.update()
         snake_head_coordinates = despawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
         screen.fill((0, 0, 0), snake_head_block)
+    if score > hiscore:
+        hiscores += [[socket.gethostname(), score, str(datetime.datetime.now())]]
+        print(hiscores)
+        hiscores = sorted(hiscores, key=lambda hiscore: hiscore[1], reverse=True)
+        for i in range(0, len(hiscores)):
+            hiscores[i][1] = str(hiscores[i][1])
+        final_hiscore_string = ''
+        counter = 1
+        for hiscore in hiscores:
+            final_hiscore_string += str(counter) + '. ' + ' '.join(hiscore)
+            final_hiscore_string += '\n'
+            counter += 1
+        hiscore_file = open('hiscores.txt', 'w')
+        hiscore_file.write(final_hiscore_string)
+        hiscore_file.flush()
     score = 0
-    textToScreen(screen, score)
     despawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
     screen.fill((0, 0, 0), apple_block)
     #print('Apple block destroyed at ' + str((apple_block.left, apple_block.top)))
