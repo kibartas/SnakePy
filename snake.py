@@ -4,6 +4,8 @@ import pygame
 import random
 import time
 import pprint
+import socket
+import datetime
 
 snake_move_by_pixels = 10
 snake_block_size = 10
@@ -11,21 +13,38 @@ screen_size = (480, 480)
 apple_size = 8
 collision = True
 apple_color = (0, 255, 0)
-default_game_speed = 0.05
-game_slow_by = 0.0005
+default_game_speed = 0.08
+game_slow_by = 0.001
 game_speed = default_game_speed
-score = 0
+score_block_height = 120
+score = 105
+white = (255, 255, 255)
+
+
+def textToScreen(screen, text, x = 30, y = 30, size = 50, color = white, font_type = 'BillionaireMediumGrunge.ttf'):
+    try:
+        screen.fill((0, 0, 0), pygame.Rect(x, y, size+size, size))
+        text = str(text)
+        font = pygame.font.Font(font_type, size)
+        text = font.render(text, True, color)
+        screen.blit(text, (x, y))
+    except e:
+        print('Font Error')
+        raise e
+
 
 def snakeHeadCollideApple(screen, apple_block, snake_blocks, snake_head_coordinates, snake_head_block):
     global game_speed, score
     screen.fill((0, 0, 0), apple_block)
     snake_blocks.append(snake_head_block.copy())
-    print('Apple eaten' + str(apple_color))
+    #print('Apple eaten' + str(apple_color))
     snake_head_coordinates = spawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
-    print('You ate an apple')
+    #print('You ate an apple')
     apple_block = spawnApple(screen, snake_blocks, snake_head_block)
     game_speed -= game_slow_by
     score += 1
+    textToScreen(screen, score)
+    print('Your score is now', score)
     return (apple_block, snake_head_coordinates)
 
 def setNewDirection(direction, directionsDict):
@@ -35,7 +54,7 @@ def setNewDirection(direction, directionsDict):
 
 def spawnApple(screen, snake_blocks, snake_head_block):
     apple_block_coordinates = (random.randint(apple_size, (screen_size[0]-apple_size)//snake_block_size)*snake_block_size,
-                               random.randint(apple_size, (screen_size[1]-apple_size)//snake_block_size)*snake_block_size)
+                               random.randint(apple_size, (screen_size[1]-apple_size)//snake_block_size)*snake_block_size+score_block_height)
     apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
     while True:
         for i in range(0, len(snake_blocks)):
@@ -47,7 +66,7 @@ def spawnApple(screen, snake_blocks, snake_head_block):
                 i = 0
                 
         break
-    print('Apple block coordinates' + str(apple_block_coordinates))
+    #print('Apple block coordinates' + str(apple_block_coordinates))
     apple_block = pygame.Rect(apple_block_coordinates, (apple_size, apple_size))
     screen.fill(apple_color, apple_block)
     pygame.display.update()
@@ -77,13 +96,13 @@ def snakeCollision(snake_blocks, snake_head_block):
     for block in snake_blocks:
         if block.colliderect(snake_head_block):
             return True
-    if (snake_head_block.top >= screen_size[0]-5 or snake_head_block.left >= screen_size[1]-5
-            or snake_head_block.left < 0 or snake_head_block.top < 0):
+    if (snake_head_block.top >= screen_size[1]+score_block_height or snake_head_block.left >= screen_size[0]
+            or snake_head_block.left < 0 or snake_head_block.top < score_block_height):
         return True
     return False 
 
 def theGame(screen):
-    global game_speed
+    global game_speed, score
     score_font = pygame.font.Font('Super Plumber Brothers.ttf', 30)
     header_text = score_font.render('Score', True, (255, 255, 255))
     running = True
@@ -91,11 +110,16 @@ def theGame(screen):
     initSnake(screen, snake_head_block)
     apple_block = spawnApple(screen, (), snake_head_block)
     directions = {'Up': True, 'Down': False, 'Right': False, 'Left': False}
+
+    screen.fill(white, pygame.Rect(0, 119, screen_size[0], 1))
+
     directionJustSet = False
     snake_head_coordinates = []
     snake_blocks = []
-    score = 0
+    coordinates = open('appleAndSnake.txt', 'a')
     while running:
+        #coordinates.write('Snake' + (str((snake_head_block.left, snake_head_block.top))))
+        #coordinates.write('Apple' + (str((apple_block.left, apple_block.top))))
         print('Snake' + (str((snake_head_block.left, snake_head_block.top))))
         print('Apple' + (str((apple_block.left, apple_block.top))))
         snake_head_coordinates.append((snake_head_block.left, snake_head_block.top))
@@ -105,25 +129,25 @@ def theGame(screen):
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN: 
-                if event.key == pygame.K_w:
+                if event.key == pygame.K_w or event.key == pygame.K_UP:
                     if directions['Up'] == True or directions['Down'] == True:
                         continue
                     snake_head_block.top -= snake_move_by_pixels
                     directions = setNewDirection('Up', directions)
                     directionJustSet = True
-                elif event.key == pygame.K_a:
+                elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
                     if directions['Left'] == True or directions['Right'] == True:
                         continue
                     snake_head_block.left -= snake_move_by_pixels
                     directions = setNewDirection('Left', directions)
                     directionJustSet = True
-                elif event.key == pygame.K_d:
+                elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     if directions['Right'] == True or directions['Left'] == True:
                         continue
                     snake_head_block.left += snake_move_by_pixels
                     directions = setNewDirection('Right', directions)
                     directionJustSet = True
-                elif event.key == pygame.K_s:
+                elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
                     if directions['Down'] == True or directions['Up'] == True:
                         continue
                     snake_head_block.top += snake_move_by_pixels
@@ -178,6 +202,8 @@ def theGame(screen):
         pygame.display.update()
         snake_head_coordinates = despawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
         screen.fill((0, 0, 0), snake_head_block)
+    score = 0
+    textToScreen(screen, score)
     despawnLeadBlocks(screen, snake_blocks, snake_head_coordinates)
     screen.fill((0, 0, 0), apple_block)
     #print('Apple block destroyed at ' + str((apple_block.left, apple_block.top)))
@@ -186,7 +212,7 @@ def theGame(screen):
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode(screen_size)
+    screen = pygame.display.set_mode((screen_size[0], screen_size[1]+score_block_height))
     while True:
         theGame(screen)
     
