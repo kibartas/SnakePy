@@ -2,6 +2,7 @@
 
 Snake made in python using pygame
 
+
 <b>Usage</b>
 <ul>
   <li>Spacebar to pause</li>
